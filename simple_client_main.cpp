@@ -49,7 +49,7 @@ int main (){
 								break;
 							}
 						case 'S':
-							cout << "yei" << endl; // mostra o json =)
+							cout << reply << endl; // mostra o json =)
 							break; 
 					}
 					break;

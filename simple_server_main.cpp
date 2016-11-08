@@ -11,6 +11,8 @@ using namespace std;
 
 #define NUMERO_DE_COLUNAS 21
 
+int tamanhoRegistro[NUMERO_DE_COLUNAS];
+
 struct dado{
 	int RowID, OrderID, tamanho;
 };
@@ -62,7 +64,7 @@ dado criaDado(string linhaRegistros){
 	return busca;
 }
 
-vector<string> criaRegistro (string linhaRegistros, int tamanhos[]){
+vector<string> criaRegistro (string linhaRegistros){
 	
 	vector <string> vetorRegistros;
 	vetorRegistros.resize(NUMERO_DE_COLUNAS);
@@ -75,10 +77,9 @@ vector<string> criaRegistro (string linhaRegistros, int tamanhos[]){
 	
 	while(contadorRegistros < NUMERO_DE_COLUNAS && !(linhaVazia)){
 		
-		if(contadorRegistros < NUMERO_DE_COLUNAS - 1)
-			inicioRegistro = linhaRegistros.find(';',inicioRegistroAnterior+1);
-		else
-			inicioRegistro = linhaRegistros.size() + inicioRegistroAnterior + 1;
+		inicioRegistro = linhaRegistros.find(';',inicioRegistroAnterior+1);
+		if(contadorRegistros == NUMERO_DE_COLUNAS - 1)
+			inicioRegistro = linhaRegistros.size()-1;
 			
 		registro = linhaRegistros.substr(inicioRegistroAnterior + 1, inicioRegistro - inicioRegistroAnterior - 1);
 		inicioRegistroAnterior = inicioRegistro;
@@ -91,8 +92,8 @@ vector<string> criaRegistro (string linhaRegistros, int tamanhos[]){
 			
 		}
 		
-		if(registro.size() > tamanhos[contadorRegistros])
-				tamanhos[contadorRegistros] = registro.size();
+		if(registro.size() > tamanhoRegistro[contadorRegistros])
+				tamanhoRegistro[contadorRegistros] = registro.size();
 		
 		vetorRegistros[contadorRegistros] = registro;		
 		contadorRegistros++;
@@ -112,7 +113,7 @@ map <dado,int> insereIndice (string linhaRegistros, map <dado,int> arvore, vecto
 }
 
 void inicializaArquivo (){
-	int tamanhos[NUMERO_DE_COLUNAS];
+
 	bool naoPrimeira = false;
 	string linhaRegistros;
 	dado dadoDoRegistro;
@@ -158,11 +159,11 @@ void atualizaArquivos (map <dado,int> arvore){
 				it = arvore.find(dadoDoRegistro);
 				if(it != arvore.end()){
 					indices << dadoDoRegistro.OrderID << " " << dadoDoRegistro.RowID << " " << dadoDoRegistro.tamanho << " " << it->second << endl;
-            		colunas.push_back(criaRegistro(linhaRegistros,tamanhos));
+            		colunas.push_back(criaRegistro(linhaRegistros));
             	}
             		
 			} else {
-				colunas.push_back(criaRegistro(linhaRegistros,tamanhos));
+				colunas.push_back(criaRegistro(linhaRegistros));
            		naoPrimeira = true;
            	}   	            
         }
@@ -246,13 +247,14 @@ int encontraPosicao(dado busca, map <dado,int> arvore){
 string pegaRegistro (int indice, vector <int> tamanhos){
 	
 	ifstream arquivoRegistros ("Sample - Superstore Sales.csv");
-	int posicao;
-	for(int i=0;i<indice;i++)
+	int posicao = 0;
+	for(int i=0;i<=indice;i++)
 		posicao += tamanhos[i];
 		
 	arquivoRegistros.seekg (posicao,ios::cur);
 	string linhaRegistros;
 	getline (arquivoRegistros,linhaRegistros);
+	//linhaRegistros += " ";
 	return linhaRegistros;
 }
 
@@ -262,6 +264,7 @@ int main(){
 	
 	vector <int> tamanhos;
 	tamanhos.resize(0);
+	tamanhos.push_back(261);
 	
     string comando;
 	int posicao;
@@ -296,8 +299,14 @@ int main(){
 							new_sock << "404";
 							
 						else if(posicao > 0){
-							//cria json;
-							new_sock << "Sucesso";
+							vector <string> campos = criaRegistro(pegaRegistro(-1,tamanhos));
+							vector <string> registros = criaRegistro(pegaRegistro(posicao,tamanhos));
+							string json = "";
+							for(int i=0;i<registros.size();i++)
+								json += ("{" + campos[i] + ":" + registros[i] + "},");
+							json[json.size()-1] = '\0';
+							cout << json << endl;
+							new_sock << "S" + json;
 						} else
 							new_sock << "RowIDNecessaria";
 								

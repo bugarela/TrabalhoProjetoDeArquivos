@@ -12,6 +12,7 @@ using namespace std;
 #define NUMERO_DE_COLUNAS 21
 
 int tamanhoRegistro[NUMERO_DE_COLUNAS];
+vector <int> tamanhos;
 
 struct dado{
 	int RowID, OrderID, tamanho;
@@ -102,13 +103,12 @@ vector<string> criaRegistro (string linhaRegistros){
 	return vetorRegistros;
 }
 
-map <dado,int> insereIndice (string linhaRegistros, map <dado,int> arvore, vector <int> tamanhos){
+map <dado,int> insereIndice (string linhaRegistros, map <dado,int> arvore){
 	
 	dado novoDado;
 	novoDado = criaDado(linhaRegistros);	
 	arvore[novoDado] = arvore.size();
 	tamanhos.push_back(novoDado.tamanho);
-	cout << novoDado.OrderID << " id" << endl;
 	return arvore;
 }
 
@@ -129,7 +129,8 @@ void inicializaArquivo (){
 			if(naoPrimeira && linhaRegistros.size() > 0){
 				dadoDoRegistro = criaDado(linhaRegistros);
 				indices << dadoDoRegistro.OrderID << " " << dadoDoRegistro.RowID << " " << dadoDoRegistro.tamanho << " " << i << endl;         
-			} else { cout << "a" << linhaRegistros.size() << endl; naoPrimeira=true;}
+			} else 
+				naoPrimeira=true;
         }
         arquivoRegistros.close();
         indices.close();
@@ -138,7 +139,6 @@ void inicializaArquivo (){
 
 void atualizaArquivos (map <dado,int> arvore){
 	
-	int tamanhos[NUMERO_DE_COLUNAS];
 	vector < vector<string> > colunas;
 	bool naoPrimeira = false;
 	string linhaRegistros;
@@ -182,13 +182,13 @@ void atualizaArquivos (map <dado,int> arvore){
 				registro = colunas[i][j];
 				
 				if(j==0 || j==1 || j==4 || j==5 || j==6 || j==8 || j==9 || j==10 || j==19){
-					for(int k=registro.size();k<tamanhos[j];k++)
+					for(int k=registro.size();k<tamanhoRegistro[j];k++)
 						saida << " ";	
 					saida << registro << " ";
 		
 				}else{
 					saida << registro;
-					for(int k=registro.size();k<=tamanhos[j];k++)
+					for(int k=registro.size();k<=tamanhoRegistro[j];k++)
 						saida << " ";
 				}
 			}
@@ -198,7 +198,7 @@ void atualizaArquivos (map <dado,int> arvore){
 	}
 }
 
-map <dado,int> leIndices (vector <int> tamanhos){
+map <dado,int> leIndices (){
 	
 	dado indiceTemporario;
 	int posicao;
@@ -244,17 +244,17 @@ int encontraPosicao(dado busca, map <dado,int> arvore){
 	
 }
 
-string pegaRegistro (int indice, vector <int> tamanhos){
+string pegaRegistro (int indice){
 	
 	ifstream arquivoRegistros ("Sample - Superstore Sales.csv");
 	int posicao = 0;
-	for(int i=0;i<=indice;i++)
-		posicao += tamanhos[i];
+	for(int i=0;i<indice;i++)
+		posicao += tamanhos[i] + 1;
 		
 	arquivoRegistros.seekg (posicao,ios::cur);
 	string linhaRegistros;
 	getline (arquivoRegistros,linhaRegistros);
-	//linhaRegistros += " ";
+	
 	return linhaRegistros;
 }
 
@@ -262,17 +262,18 @@ int main(){
 	
 	cout << ">Servidor rodando..." << endl;
 	
-	vector <int> tamanhos;
+
 	tamanhos.resize(0);
-	tamanhos.push_back(261);
+	tamanhos.push_back(260);
 	
     string comando;
 	int posicao;
-	map <dado,int> arvore = leIndices(tamanhos);
+	vector <string> campos = criaRegistro(pegaRegistro(-1));
+	map <dado,int> arvore = leIndices();
 	if(arvore.size() == 0){
 		cout << ">Arquivos precisam ser inicializados. Inicializando..." << endl;
 		inicializaArquivo();
-		arvore = leIndices(tamanhos);
+		arvore = leIndices();
 	}
 	
 	cout << ">Arvore carregada com " << arvore.size() << " registros." << endl;
@@ -299,13 +300,12 @@ int main(){
 							new_sock << "404";
 							
 						else if(posicao > 0){
-							vector <string> campos = criaRegistro(pegaRegistro(-1,tamanhos));
-							vector <string> registros = criaRegistro(pegaRegistro(posicao,tamanhos));
-							string json = "";
+							vector <string> registros = criaRegistro(pegaRegistro(posicao));
+							string json = "{";
 							for(int i=0;i<registros.size();i++)
-								json += ("{" + campos[i] + ":" + registros[i] + "},");
-							json[json.size()-1] = '\0';
-							cout << json << endl;
+								json += ("{" + campos[i] + ": " + registros[i] + "},");
+							json[json.size()-1] = '}';
+							cout << "a: " << pegaRegistro(posicao) << endl;
 							new_sock << "S" + json;
 						} else
 							new_sock << "RowIDNecessaria";
@@ -316,7 +316,7 @@ int main(){
 					
 						comando.erase(0,1);
 						escreveRegistro(comando);						
-						arvore = insereIndice(comando, arvore, tamanhos);
+						arvore = insereIndice(comando, arvore);
 						new_sock << "Inserido com sucesso!";
 						break;
 					

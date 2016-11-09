@@ -4,8 +4,17 @@
 #include <string>
 using namespace std;
 
-// http://stackoverflow.com/questions/6213341/how-to-move-the-file-pointer-to-next-character-through-ifstream-without-getti
-// http://stackoverflow.com/questions/6932409/writting-a-string-to-the-end-of-a-file-c
+string parse(string json){
+	for(int i=0;i<json.size()-1;){
+		if(json[i]=='{')
+			json.erase(i,1);
+		else if(json[i]=='}'){
+			json[i] = '\n';
+			json.erase(i+1,1);
+		} else i++;
+	}
+	return json;
+}
 
 int main (){
 	try{
@@ -49,7 +58,8 @@ int main (){
 								break;
 							}
 						case 'S':
-							cout << reply << endl; // mostra o json =)
+							reply.erase(0,1);
+							cout << parse(reply) << endl; 
 							break; 
 					}
 					break;
